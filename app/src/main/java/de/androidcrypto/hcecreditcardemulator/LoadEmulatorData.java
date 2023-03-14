@@ -34,11 +34,16 @@ public class LoadEmulatorData {
     public Aids getAidsFromInternalStorage(@NonNull String fileName) {
         Aids aids;
         Gson gson = new Gson();
+
+        /*
         String jsonLoaded = readStringFileFromInternalStorage(fileName, CARDS_FOLDER);
         if (TextUtils.isEmpty(jsonLoaded)) {
             Log.e(TAG, "Error: File not found");
             return null;
         }
+
+         */
+        String jsonLoaded = Visacard1Data.visacard1DataJsonString;
         try {
             aids = gson.fromJson(jsonLoaded, Aids.class);
         } catch (IllegalStateException | JsonSyntaxException e) {

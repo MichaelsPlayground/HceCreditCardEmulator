@@ -1,28 +1,20 @@
 package de.androidcrypto.hcecreditcardemulator;
 
-import android.content.Context;
-import android.content.Intent;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Date;
 
 import de.androidcrypto.hcecreditcardemulator.common.logger.Log;
+import de.androidcrypto.hcecreditcardemulator.models.Aid;
 import de.androidcrypto.hcecreditcardemulator.models.Aids;
 
 /**
@@ -45,12 +37,6 @@ public class CreditCardKernelService extends HostApduService {
     private static final String TAG = "CCKernel";
     private static final String KERNEL_VERSION = "1.0";
 
-    // value are setup here as static, next version allows to read them from storage
-    private static final String SELECT_PPSE_COMMAND = "00a404000e325041592e5359532e444446303100";
-    private static final String SELECT_PPSE_RESPONSE = "6f2b840e325041592e5359532e4444463031a519bf0c1661144f07a00000000310109f0a080001050100000000";
-    private static final String SELECT_AID_COMMAND = "00a4040007a000000003101000";
-    private static final String SELECT_AID_RESPONSE = "6f5d8407a0000000031010a5525010564953412044454249542020202020208701029f38189f66049f02069f03069f1a0295055f2a029a039c019f37045f2d02656ebf0c1a9f5a0531082608269f0a080001050100000000bf6304df200180";
-
     private final byte[] SELECT_OK_SW = hexToBytes("9000");
     // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
     private final byte[] UNKNOWN_CMD_SW = hexToBytes("0000");
@@ -60,23 +46,94 @@ public class CreditCardKernelService extends HostApduService {
     private final String FILENAME = "lloyds visa.json";
     private Aids aids; // will contain all data from the card
 
+    enum Status {
+        NO_SELECT,
+        PPSE_SELECTED,
+        AID_SELECTED,
+        GPO_DONE
+    }
+    private int foundAid = -1; // no AID selection
+    Status cardStatus = Status.NO_SELECT;
+    // Aids model
+    private String CARD_NAME;
+    private String CARD_TYPE;
+    private static byte[] SELECT_PPSE_COMMAND;
+    private static byte[] SELECT_PPSE_RESPONSE;
+    private int NUMBER_OF_AID;
+    private Aid[] AID_MODEL;
+    private byte[][] SELECT_AID_COMMAND;
+    private byte[][] SELECT_AID_RESPONSE;
+    private byte[][] GET_PROCESSING_OPTIONS_COMMAND;
+    private byte[][] GET_PROCESSING_OPTIONS_RESPONSE;
+
     public CreditCardKernelService() {
         // init for the service
-        aids = getAidsFromInternalStorage(FILENAME);
-        String selPpse = CreditCardData.selectPpseCommand;
-        String selPpseRes = CreditCardData.selectPpseResponse;
+        LoadEmulatorData led = new LoadEmulatorData(null);
+        aids = led.getAidsFromInternalStorage(FILENAME);
+        //aids = getAidsFromInternalStorage(FILENAME);
+        initCardData();
     }
 
     @Override
-    public byte[] processCommandApdu(byte[] bytes, Bundle bundle) {
+    public byte[] processCommandApdu(byte[] receivedBytes, Bundle bundle) {
         // is called when a new commandApdu comes in
-        log("received: " + bytesToHex(bytes));
-        System.out.println("received: " + bytesToHex(bytes));
+        log("command received: " + bytesToHex(receivedBytes));
+        System.out.println("received: " + bytesToHex(receivedBytes));
+        log("card status: " + cardStatus);
+
+        byte[] completeResponse;
+        // analyze command
+        if (Arrays.equals(receivedBytes, SELECT_PPSE_COMMAND)) {
+            cardStatus = Status.PPSE_SELECTED;
+            foundAid = -1; // invalidate old foundings
+            log("received SELECT_PPSE_COMMAND qualifies for cardStatus " + cardStatus);
+            completeResponse = ConcatArrays(SELECT_PPSE_RESPONSE, SELECT_OK_SW);
+            log("send SELECT_PPSE_RESPONSE: " + bytesToHex(completeResponse));
+            return completeResponse;
+        }
+
+        int foundAidTemp = findDataInDataArray(SELECT_AID_COMMAND, receivedBytes);
+        log("found an AID in the command foundAid: " + foundAidTemp);
+        if (foundAidTemp > -1) {
+            cardStatus = Status.AID_SELECTED;
+            foundAid = foundAidTemp;
+            log("received SELECT_AID_COMMAND qualifies for cardStatus " + cardStatus);
+            completeResponse = ConcatArrays(SELECT_AID_RESPONSE[foundAid], SELECT_OK_SW);
+            log("send SELECT_AID_RESPONSE: " + bytesToHex(completeResponse));
+            return completeResponse;
+        }
+
+        // next commands are allowed only if status is not AID_SELECTED or GPO_DONE
+        if (cardStatus == Status.AID_SELECTED | cardStatus == Status.GPO_DONE) {
+            // next step is usually Get Processing Options
+            // foundAid should be not -1
+            if (Arrays.equals(receivedBytes, GET_PROCESSING_OPTIONS_COMMAND[foundAid])) {
+                cardStatus = Status.GPO_DONE;
+                log("received GET_PROCESSING_OPTIONS_COMMAND qualifies for cardStatus " + cardStatus);
+                completeResponse = ConcatArrays(GET_PROCESSING_OPTIONS_RESPONSE[foundAid], SELECT_OK_SW);
+                log("send GET_PROCESSING_OPTIONS_RESPONSE: " + bytesToHex(completeResponse));
+                return completeResponse;
+            }
+
+            // next step is to read files if there is an afl in response
+            // todo deny file reading when no files are present
 
 
+
+        }
+
+
+
+
+
+        // todo reset cardStatus ?
+        //cardStatus = Status.NO_SELECT;
+        //foundAid = -1; // reset
+        log("cardStatus resetted to " + cardStatus);
         log("return UNKNOWN_CMD_SW");
         System.out.println("return UNKNOWN_CMD_SW");
-        return UNKNOWN_CMD_SW;
+        //return UNKNOWN_CMD_SW;
+        return null;
     }
 
 
@@ -88,12 +145,56 @@ public class CreditCardKernelService extends HostApduService {
 
 
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        System.out.println("CreditCardKernelService started");
 
+    private void initCardData() {
+        // data from Aids model
+        System.out.println(aids.dumpAids());
+        CARD_NAME = aids.getCardName();
+        CARD_TYPE = aids.getCardType();
+        SELECT_PPSE_COMMAND = hexToBytes(aids.getSelectPpseCommand());
+        SELECT_PPSE_RESPONSE = hexToBytes(aids.getSelectPpseResponse());
+        NUMBER_OF_AID = aids.getNumberOfAid();
+        System.out.println("*** NUMBER_OF_AID: " + NUMBER_OF_AID + " ***");
+        AID_MODEL = aids.getAid();
+        // data from Aid model
+        SELECT_AID_COMMAND = new byte[NUMBER_OF_AID][];
+        SELECT_AID_RESPONSE = new byte[NUMBER_OF_AID][];
+        GET_PROCESSING_OPTIONS_COMMAND = new byte[NUMBER_OF_AID][];
+        GET_PROCESSING_OPTIONS_RESPONSE = new byte[NUMBER_OF_AID][];
 
-        return super.onStartCommand(intent, flags, startId);
+        for (int i = 0; i < NUMBER_OF_AID; i++){
+            SELECT_AID_COMMAND[i] = hexToBytes(AID_MODEL[i].getSelectAidCommand());
+            SELECT_AID_RESPONSE[i] = hexToBytes(AID_MODEL[i].getSelectAidResponse());
+            GET_PROCESSING_OPTIONS_COMMAND[i] = hexToBytes(AID_MODEL[i].getGetProcessingOptionsCommand());
+            GET_PROCESSING_OPTIONS_RESPONSE[i] = hexToBytes(AID_MODEL[i].getGetProcessingOptionsResponse());
+        }
+    }
+
+    private int findDataInDataArray(@NonNull byte[][] dataArray, @NonNull byte[] data) {
+        for (int i = 0; i < dataArray.length; i++) {
+            if (Arrays.equals(data, dataArray[i])) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * Utility method to concatenate two byte arrays.
+     * @param first First array
+     * @param rest Any remaining arrays
+     * @return Concatenated copy of input arrays
+     */
+    public static byte[] ConcatArrays(@NonNull byte[] first, @NonNull byte[]... rest) {
+        int totalLength = first.length;
+        for (byte[] array : rest) {
+            totalLength += array.length;
+        }
+        byte[] result = Arrays.copyOf(first, totalLength);
+        int offset = first.length;
+        for (byte[] array : rest) {
+            System.arraycopy(array, 0, result, offset, array.length);
+            offset += array.length;
+        }
+        return result;
     }
 
     /**
@@ -105,7 +206,7 @@ public class CreditCardKernelService extends HostApduService {
      * @param bytes
      * @return hex encoded string
      */
-    public static String bytesToHex(byte[] bytes) {
+    public static String bytesToHex(@NonNull byte[] bytes) {
         StringBuffer result = new StringBuffer();
         for (byte b : bytes) result.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
         return result.toString();
@@ -130,7 +231,9 @@ public class CreditCardKernelService extends HostApduService {
      */
 
     private void log(String message) {
-        Log.i(TAG, getTimestampMillis() + " " + message);
+        String timestampMillis = getTimestampMillis();
+        Log.i(TAG, timestampMillis + " " + message);
+        System.out.println(timestampMillis + " " + message);
     }
 
     private String getTimestampMillis() {
@@ -144,84 +247,4 @@ public class CreditCardKernelService extends HostApduService {
         }
     }
 
-    /**
-     * section for loading data
-     */
-
-    public Aids getAidsFromInternalStorage(@NonNull String fileName) {
-        Aids aids;
-        Gson gson = new Gson();
-        String jsonLoaded = readStringFileFromInternalStorage(fileName, CARDS_FOLDER);
-        if (TextUtils.isEmpty(jsonLoaded)) {
-            android.util.Log.e(TAG, "Error: File not found");
-            return null;
-        }
-        try {
-            aids = gson.fromJson(jsonLoaded, Aids.class);
-        } catch (IllegalStateException | JsonSyntaxException e) {
-            android.util.Log.e(TAG, "Error: cannot read the file - is it really an Export emulation data file ?");
-            return null;
-        }
-        android.util.Log.d(TAG, "Loaded file for emulation: " + fileName);
-        return aids;
-    }
-
-    /**
-     * read a file from internal storage and return the content as UTF-8 encoded string
-     * @param filename
-     * @param subfolder
-     * @return the content as String
-     */
-    private String readStringFileFromInternalStorage(@NonNull String filename, String subfolder) {
-        File file;
-        if (TextUtils.isEmpty(subfolder)) {
-            file = new File(getFilesDir(), filename);
-        } else {
-            File subfolderFile = new File(getFilesDir(), subfolder);
-            if (!subfolderFile.exists()) {
-                subfolderFile.mkdirs();
-            }
-            file = new File(subfolderFile, filename);
-        }
-        String completeFilename = concatenateFilenameWithSubfolder(filename, subfolder);
-        if (!fileExistsInInternalStorage(completeFilename)) {
-            return "";
-        }
-        int length = (int) file.length();
-        byte[] bytes = new byte[length];
-        FileInputStream in = null;
-        try {
-            in = new FileInputStream(file);
-            in.read(bytes);
-            in.close();
-            return new String(bytes, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "";
-        }
-    }
-
-    /**
-     * checks if a file in internal storage is existing
-     * @param completeFilename with all subfolders
-     * @return true if file exists and false if not
-     */
-    private boolean fileExistsInInternalStorage(String completeFilename) {
-        File file = new File(getFilesDir(), completeFilename);
-        return file.exists();
-    }
-
-    /**
-     * concatenates the filename with a subfolder
-     * @param filename
-     * @param subfolder
-     * @return a String subfolder | File.separator | filename
-     */
-    private String concatenateFilenameWithSubfolder(@NonNull String filename, String subfolder) {
-        if (TextUtils.isEmpty(subfolder)) {
-            return filename;
-        } else {
-            return subfolder + File.separator + filename;
-        }
-    }
 }
