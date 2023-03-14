@@ -57,16 +57,14 @@ public class LoadEmulatorData {
      */
     private String readStringFileFromInternalStorage(@NonNull String filename, String subfolder) {
         File file;
-        file = context.getFilesDir();
-        System.out.println("file: " + file);
         if (TextUtils.isEmpty(subfolder)) {
-            //file = new File(context.getFilesDir(), filename);
-            file = context.getExternalFilesDir(filename);
+            file = new File(context.getFilesDir(), filename);
+            //file = context.getExternalFilesDir(filename);
         } else {
-            //File subfolderFile = new File(context.getFilesDir(), subfolder);
-            System.out.println("context: " + context);
-            System.out.println("subfolder: " + subfolder);
-            File subfolderFile = context.getExternalFilesDir(subfolder);
+            File subfolderFile = new File(context.getFilesDir(), subfolder);
+            //System.out.println("context: " + context);
+            //System.out.println("subfolder: " + subfolder);
+            //File subfolderFile = context.getExternalFilesDir(subfolder);
             if (!subfolderFile.exists()) {
                 subfolderFile.mkdirs();
             }
@@ -96,8 +94,8 @@ public class LoadEmulatorData {
      * @return true if file exists and false if not
      */
     private boolean fileExistsInInternalStorage(String completeFilename) {
-        //File file = new File(context.getFilesDir(), completeFilename);
-        File file = context.getExternalFilesDir(completeFilename);
+        File file = new File(context.getFilesDir(), completeFilename);
+        //File file = context.getExternalFilesDir(completeFilename);
         return file.exists();
     }
 
