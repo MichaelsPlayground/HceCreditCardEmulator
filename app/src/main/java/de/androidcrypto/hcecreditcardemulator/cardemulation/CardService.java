@@ -49,6 +49,9 @@ public class CardService extends HostApduService {
     private static final String PPSE_AID = "2PAY.SYS.DDF01";
     //private static final String PPSE_AID = "325041592e5359532e4444463031"; // PPSE_AID = "2PAY.SYS.DDF01"
     private static final String VISA_AID = "A0000000031010";
+    private final byte[] SELECT_OK_SW = hexToBytes("9000");
+    // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
+    private final byte[] UNKNOWN_CMD_SW = hexToBytes("0000");
     private static final String VISA_SELECT_PPSE_COMMAND = "00a404000e325041592e5359532e444446303100";
     private static final String VISA_SELECT_PPSE_RESPONSE = "6f2b840e325041592e5359532e4444463031a519bf0c1661144f07a00000000310109f0a080001050100000000";
     private static final String VISA_SELECT_AID_COMMAND = "00a4040007a000000003101000";
@@ -62,9 +65,7 @@ public class CardService extends HostApduService {
     // Format: [Class | Instruction | Parameter 1 | Parameter 2]
     private static final String SELECT_APDU_HEADER = "00A40400";
     // "OK" status word sent in response to SELECT AID command (0x9000)
-    private static final byte[] SELECT_OK_SW = HexStringToByteArray("9000");
-    // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
-    private static final byte[] UNKNOWN_CMD_SW = HexStringToByteArray("0000");
+
 
     private static final byte[] SELECT_APDU_PPSE_COMMAND = HexStringToByteArray(VISA_SELECT_PPSE_COMMAND);
     private static final byte[] SELECT_APDU_PPSE_RESPONSE = HexStringToByteArray(VISA_SELECT_PPSE_RESPONSE);

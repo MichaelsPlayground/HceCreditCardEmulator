@@ -40,6 +40,7 @@ public class CreditCardKernelService extends HostApduService {
     private final byte[] SELECT_OK_SW = hexToBytes("9000");
     // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
     private final byte[] UNKNOWN_CMD_SW = hexToBytes("0000");
+    private final byte[] SELECT_AID_TRAILER = new byte[]{(byte) 0x00, (byte) 0xA4, (byte) 0x04, (byte) 0x00};
 
     // this is vor the next step - load an individual file
     private final String CARDS_FOLDER = "cards";
@@ -65,6 +66,15 @@ public class CreditCardKernelService extends HostApduService {
     private byte[][] SELECT_AID_RESPONSE;
     private byte[][] GET_PROCESSING_OPTIONS_COMMAND;
     private byte[][] GET_PROCESSING_OPTIONS_RESPONSE;
+    private byte[][] APPLICATION_TRANSACTION_COUNTER_COMMAND;
+    private byte[][] APPLICATION_TRANSACTION_COUNTER_RESPONSE;
+    private byte[][] LEFT_PIN_TRY_COUNTER_COMMAND;
+    private byte[][] LEFT_PIN_TRY_COUNTER_RESPONSE;
+    private byte[][] LAST_ONLINE_ATC_REGISTER_COMMAND;
+    private byte[][] LAST_ONLINE_ATC_REGISTER_RESPONSE;
+    private byte[][] LOG_FORMAT_COMMAND;
+    private byte[][] LOG_FORMAT_RESPONSE;
+
 
     public CreditCardKernelService() {
         // init for the service
@@ -92,15 +102,18 @@ public class CreditCardKernelService extends HostApduService {
             return completeResponse;
         }
 
-        int foundAidTemp = findDataInDataArray(SELECT_AID_COMMAND, receivedBytes);
-        log("found an AID in the command foundAid: " + foundAidTemp);
-        if (foundAidTemp > -1) {
-            cardStatus = Status.AID_SELECTED;
-            foundAid = foundAidTemp;
-            log("received SELECT_AID_COMMAND qualifies for cardStatus " + cardStatus);
-            completeResponse = ConcatArrays(SELECT_AID_RESPONSE[foundAid], SELECT_OK_SW);
-            log("send SELECT_AID_RESPONSE: " + bytesToHex(completeResponse));
-            return completeResponse;
+        // precheck if it is a selectAid command trailer
+        if (Arrays.equals(Arrays.copyOfRange(receivedBytes, 0, 4), SELECT_AID_TRAILER)) {
+            int foundAidTemp = findDataInDataArray(SELECT_AID_COMMAND, receivedBytes);
+            log("found an AID in the command foundAid: " + foundAidTemp);
+            if (foundAidTemp > -1) {
+                cardStatus = Status.AID_SELECTED;
+                foundAid = foundAidTemp;
+                log("received SELECT_AID_COMMAND qualifies for cardStatus " + cardStatus);
+                completeResponse = ConcatArrays(SELECT_AID_RESPONSE[foundAid], SELECT_OK_SW);
+                log("send SELECT_AID_RESPONSE: " + bytesToHex(completeResponse));
+                return completeResponse;
+            }
         }
 
         // next commands are allowed only if status is not AID_SELECTED or GPO_DONE
@@ -118,6 +131,32 @@ public class CreditCardKernelService extends HostApduService {
             // next step is to read files if there is an afl in response
             // todo deny file reading when no files are present
 
+            // some single requests
+            if (Arrays.equals(receivedBytes, APPLICATION_TRANSACTION_COUNTER_COMMAND[foundAid])) {
+                log("received APPLICATION_TRANSACTION_COUNTER_COMMAND");
+                completeResponse = ConcatArrays(APPLICATION_TRANSACTION_COUNTER_RESPONSE[foundAid], SELECT_OK_SW);
+                log("send APPLICATION_TRANSACTION_COUNTER_RESPONSE: " + bytesToHex(completeResponse));
+                return completeResponse;
+            }
+            if (Arrays.equals(receivedBytes, LEFT_PIN_TRY_COUNTER_COMMAND[foundAid])) {
+                log("received LEFT_PIN_TRY_COUNTER_COMMAND");
+                completeResponse = ConcatArrays(LEFT_PIN_TRY_COUNTER_RESPONSE[foundAid], SELECT_OK_SW);
+                log("send LEFT_PIN_TRY_COUNTER_RESPONSE: " + bytesToHex(completeResponse));
+                return completeResponse;
+            }
+            if (Arrays.equals(receivedBytes, LAST_ONLINE_ATC_REGISTER_COMMAND[foundAid])) {
+                log("received LAST_ONLINE_ATC_REGISTER_COMMAND");
+                completeResponse = ConcatArrays(LAST_ONLINE_ATC_REGISTER_RESPONSE[foundAid], SELECT_OK_SW);
+                log("send LAST_ONLINE_ATC_REGISTER_RESPONSE: " + bytesToHex(completeResponse));
+                return completeResponse;
+            }
+            if (Arrays.equals(receivedBytes, LOG_FORMAT_COMMAND[foundAid])) {
+                log("received LOG_FORMAT_COMMAND");
+                completeResponse = ConcatArrays(LOG_FORMAT_RESPONSE[foundAid], SELECT_OK_SW);
+                log("send LOG_FORMAT_RESPONSE: " + bytesToHex(completeResponse));
+                return completeResponse;
+            }
+
 
 
         }
@@ -129,11 +168,11 @@ public class CreditCardKernelService extends HostApduService {
         // todo reset cardStatus ?
         //cardStatus = Status.NO_SELECT;
         //foundAid = -1; // reset
-        log("cardStatus resetted to " + cardStatus);
+        log("cardStatus is " + cardStatus);
         log("return UNKNOWN_CMD_SW");
         System.out.println("return UNKNOWN_CMD_SW");
-        //return UNKNOWN_CMD_SW;
-        return null;
+        return UNKNOWN_CMD_SW;
+        //return null;
     }
 
 
@@ -141,6 +180,8 @@ public class CreditCardKernelService extends HostApduService {
     public void onDeactivated(int i) {
         // is called when the connection between this device and a NFC card reader ends
         log("received deactivated message with code: " + i);
+        if (i == DEACTIVATION_LINK_LOSS) log("deactivated because of DEACTIVATION_LINK_LOSS");
+        if (i == DEACTIVATION_DESELECTED) log("deactivated because of DEACTIVATION_DESELECTED");
     }
 
 
@@ -161,12 +202,31 @@ public class CreditCardKernelService extends HostApduService {
         SELECT_AID_RESPONSE = new byte[NUMBER_OF_AID][];
         GET_PROCESSING_OPTIONS_COMMAND = new byte[NUMBER_OF_AID][];
         GET_PROCESSING_OPTIONS_RESPONSE = new byte[NUMBER_OF_AID][];
+        APPLICATION_TRANSACTION_COUNTER_COMMAND = new byte[NUMBER_OF_AID][];
+        APPLICATION_TRANSACTION_COUNTER_RESPONSE = new byte[NUMBER_OF_AID][];
+        LEFT_PIN_TRY_COUNTER_COMMAND = new byte[NUMBER_OF_AID][];
+        LEFT_PIN_TRY_COUNTER_RESPONSE = new byte[NUMBER_OF_AID][];
+        LAST_ONLINE_ATC_REGISTER_COMMAND = new byte[NUMBER_OF_AID][];
+        LAST_ONLINE_ATC_REGISTER_RESPONSE = new byte[NUMBER_OF_AID][];
+        LOG_FORMAT_COMMAND = new byte[NUMBER_OF_AID][];
+        LOG_FORMAT_RESPONSE = new byte[NUMBER_OF_AID][];
 
         for (int i = 0; i < NUMBER_OF_AID; i++){
             SELECT_AID_COMMAND[i] = hexToBytes(AID_MODEL[i].getSelectAidCommand());
             SELECT_AID_RESPONSE[i] = hexToBytes(AID_MODEL[i].getSelectAidResponse());
             GET_PROCESSING_OPTIONS_COMMAND[i] = hexToBytes(AID_MODEL[i].getGetProcessingOptionsCommand());
             GET_PROCESSING_OPTIONS_RESPONSE[i] = hexToBytes(AID_MODEL[i].getGetProcessingOptionsResponse());
+            // todo this are static/fixed values, need to get values from json
+            // todo implement an empty blank hexToBytes
+            APPLICATION_TRANSACTION_COUNTER_COMMAND[i] = new byte[]{(byte) 0x80, (byte) 0xCA, (byte) 0x9F, (byte) 0x36, (byte) 0x00};
+            APPLICATION_TRANSACTION_COUNTER_RESPONSE[i] = new byte[]{(byte) 0x12};
+            LEFT_PIN_TRY_COUNTER_COMMAND[i] = new byte[]{(byte) 0x80, (byte) 0xCA, (byte) 0x9F, (byte) 0x17, (byte) 0x00};
+            LEFT_PIN_TRY_COUNTER_RESPONSE[i] = new byte[]{(byte) 0x3};
+            LAST_ONLINE_ATC_REGISTER_COMMAND[i] = new byte[]{(byte) 0x80, (byte) 0xCA, (byte) 0x9F, (byte) 0x13, (byte) 0x00};
+            LAST_ONLINE_ATC_REGISTER_RESPONSE[i] = new byte[]{(byte) 0x10};
+            LOG_FORMAT_COMMAND[i] = new byte[]{(byte) 0x80, (byte) 0xCA, (byte) 0x9F, (byte) 0x4F, (byte) 0x00};
+            LOG_FORMAT_RESPONSE[i] = new byte[]{(byte) 0x00};
+
         }
     }
 
