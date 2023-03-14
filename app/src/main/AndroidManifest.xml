@@ -27,7 +27,7 @@
         </activity>
         <!-- BEGIN_INCLUDE(CardEmulationManifest) -->
         <!-- Service for handling communication with NFC terminal. -->
-        <service android:name=".cardemulation.CardService"
+        <service android:name=".CreditCardKernelService"
             android:exported="true"
             android:permission="android.permission.BIND_NFC_SERVICE">
             <!-- Intent filter indicating that we support card emulation. -->

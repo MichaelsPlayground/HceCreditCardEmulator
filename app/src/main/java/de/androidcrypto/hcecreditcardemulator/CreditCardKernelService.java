@@ -1,5 +1,6 @@
 package de.androidcrypto.hcecreditcardemulator;
 
+import android.content.Context;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,20 +39,36 @@ public class CreditCardKernelService extends HostApduService {
     private static final String SELECT_AID_COMMAND = "00a4040007a000000003101000";
     private static final String SELECT_AID_RESPONSE = "6f5d8407a0000000031010a5525010564953412044454249542020202020208701029f38189f66049f02069f03069f1a0295055f2a029a039c019f37045f2d02656ebf0c1a9f5a0531082608269f0a080001050100000000bf6304df200180";
 
+    private final byte[] SELECT_OK_SW = hexToBytes("9000");
+    // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
+    private final byte[] UNKNOWN_CMD_SW = hexToBytes("0000");
+
     // this is vor the next step - load an individual file
     private final String FILENAME = "lloyds visa.json";
     private Aids aids; // will contain all data from the card
 
     public CreditCardKernelService() {
         // init for the service
-        LoadEmulatorData led = new LoadEmulatorData(getApplicationContext());
+        Context context = getBaseContext();
+        if (context == null) {
+            System.out.println("CONTEXT IS NULL");
+        } else {
+            System.out.println("CONTEXT IS NOT NULL");
+        }
+        LoadEmulatorData led = new LoadEmulatorData(context);
         aids = led.getAidsFromInternalStorage(FILENAME);
     }
 
     @Override
     public byte[] processCommandApdu(byte[] bytes, Bundle bundle) {
         // is called when a new commandApdu comes in
-        return new byte[0];
+        log("received: " + bytesToHex(bytes));
+        System.out.println("received: " + bytesToHex(bytes));
+
+
+        log("return UNKNOWN_CMD_SW");
+        System.out.println("return UNKNOWN_CMD_SW");
+        return UNKNOWN_CMD_SW;
     }
 
 
@@ -62,7 +79,34 @@ public class CreditCardKernelService extends HostApduService {
     }
 
 
+    /**
+     * section for conversions
+     */
 
+    /**
+     * converts a byte array to a hex encoded string
+     * @param bytes
+     * @return hex encoded string
+     */
+    public static String bytesToHex(byte[] bytes) {
+        StringBuffer result = new StringBuffer();
+        for (byte b : bytes) result.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
+        return result.toString();
+    }
+
+    /**
+     * converts a hex encoded string to a byte array
+     * @param str
+     * @return
+     */
+    public static byte[] hexToBytes(String str) {
+        byte[] bytes = new byte[str.length() / 2];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) Integer.parseInt(str.substring(2 * i, 2 * i + 2),
+                    16);
+        }
+        return bytes;
+    }
 
     /**
      * section for loggin
