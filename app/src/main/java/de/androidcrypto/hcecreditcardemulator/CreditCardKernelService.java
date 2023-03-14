@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import de.androidcrypto.hcecreditcardemulator.common.logger.Log;
+import de.androidcrypto.hcecreditcardemulator.models.Aids;
 
 /**
  * This is a system service that acts as an NFC service for Host Card Emulation (HCE)
@@ -37,6 +38,15 @@ public class CreditCardKernelService extends HostApduService {
     private static final String SELECT_AID_COMMAND = "00a4040007a000000003101000";
     private static final String SELECT_AID_RESPONSE = "6f5d8407a0000000031010a5525010564953412044454249542020202020208701029f38189f66049f02069f03069f1a0295055f2a029a039c019f37045f2d02656ebf0c1a9f5a0531082608269f0a080001050100000000bf6304df200180";
 
+    // this is vor the next step - load an individual file
+    private final String FILENAME = "lloyds visa.json";
+    private Aids aids; // will contain all data from the card
+
+    public CreditCardKernelService() {
+        // init for the service
+        LoadEmulatorData led = new LoadEmulatorData(getApplicationContext());
+        aids = led.getAidsFromInternalStorage(FILENAME);
+    }
 
     @Override
     public byte[] processCommandApdu(byte[] bytes, Bundle bundle) {
@@ -48,8 +58,7 @@ public class CreditCardKernelService extends HostApduService {
     @Override
     public void onDeactivated(int i) {
         // is called when the connection between this device and a NFC card reader ends
-
-
+        log("received deactivated message with code: " + i);
     }
 
 
