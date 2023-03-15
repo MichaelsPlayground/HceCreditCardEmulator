@@ -14,7 +14,7 @@
 
         ]]>
     </string>
-    <string name="service_name">CardEmulation Sample</string>
+    <string name="service_name">HCE CreditCard Emulator</string>
     <string name="card_title">Sample Loyalty Card</string>
     <string name="visa_card_title">Sample VISA Card</string>
     <string name="account_number">Account Number</string>

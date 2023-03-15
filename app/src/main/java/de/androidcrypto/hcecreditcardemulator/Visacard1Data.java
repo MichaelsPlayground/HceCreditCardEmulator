@@ -5,9 +5,10 @@ public class Visacard1Data {
     /**
      * This class is holding the data of a sample VisaCard.
      * The card provides no files as no AFL data is present
-     * The card number if anonymized so you should use it :-)
+     * The card number is anonymized so you should not use it :-)
      */
 
+    // Lloyds Bank VisaCard
     public static String visacard1DataJsonString = "{\n" +
             "  \"aid\": [\n" +
             "    {\n" +

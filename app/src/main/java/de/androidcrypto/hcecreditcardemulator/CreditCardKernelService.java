@@ -1,5 +1,7 @@
 package de.androidcrypto.hcecreditcardemulator;
 
+import android.app.Service;
+import android.content.Intent;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Build;
 import android.os.Bundle;
@@ -40,6 +42,7 @@ public class CreditCardKernelService extends HostApduService {
     private final byte[] SELECT_OK_SW = hexToBytes("9000");
     // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
     private final byte[] UNKNOWN_CMD_SW = hexToBytes("0000");
+    private final byte[] NOT_SUPPORTED_CMD_SW = hexToBytes("6a81");
     private final byte[] SELECT_AID_TRAILER = new byte[]{(byte) 0x00, (byte) 0xA4, (byte) 0x04, (byte) 0x00};
 
     // this is vor the next step - load an individual file
@@ -74,6 +77,10 @@ public class CreditCardKernelService extends HostApduService {
     private byte[][] LAST_ONLINE_ATC_REGISTER_RESPONSE;
     private byte[][] LOG_FORMAT_COMMAND;
     private byte[][] LOG_FORMAT_RESPONSE;
+    private byte[][] INTERNAL_AUTHENTICATION_COMMAND;
+    private byte[][] INTERNAL_AUTHENTICATION_RESPONSE;
+    private byte[][] APPLICATION_CRYPTOGRAM_COMMAND;
+    private byte[][] APPLICATION_CRYPTOGRAM_RESPONSE;
 
 
     public CreditCardKernelService() {
@@ -82,6 +89,20 @@ public class CreditCardKernelService extends HostApduService {
         aids = led.getAidsFromInternalStorage(FILENAME);
         //aids = getAidsFromInternalStorage(FILENAME);
         initCardData();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId)
+    {
+        log("onStart");
+        return Service.START_STICKY;
+    }
+
+    @Override
+    public void onCreate() {
+        log("onCreate CreditCardKernel: " + KERNEL_VERSION);
+        initCardData();
+        super.onCreate();
     }
 
     @Override
@@ -154,9 +175,21 @@ public class CreditCardKernelService extends HostApduService {
                 log("received LOG_FORMAT_COMMAND");
                 completeResponse = ConcatArrays(LOG_FORMAT_RESPONSE[foundAid], SELECT_OK_SW);
                 log("send LOG_FORMAT_RESPONSE: " + bytesToHex(completeResponse));
+                //return completeResponse;
+                return UNKNOWN_CMD_SW;
+            }
+            if (Arrays.equals(receivedBytes, INTERNAL_AUTHENTICATION_COMMAND[foundAid])) {
+                log("received INTERNAL_AUTHENTICATION");
+                completeResponse = ConcatArrays(INTERNAL_AUTHENTICATION_RESPONSE[foundAid], SELECT_OK_SW);
+                log("send INTERNAL_AUTHENTICATION_RESPONSE: " + bytesToHex(completeResponse));
                 return completeResponse;
             }
-
+            if (Arrays.equals(receivedBytes, APPLICATION_CRYPTOGRAM_COMMAND[foundAid])) {
+                log("received APPLICATION_CRYPTOGRAM_COMMAND");
+                completeResponse = ConcatArrays(APPLICATION_CRYPTOGRAM_RESPONSE[foundAid], SELECT_OK_SW);
+                log("send APPLICATION_CRYPTOGRAM_RESPONSE: " + bytesToHex(completeResponse));
+                return completeResponse;
+            }
 
 
         }
@@ -182,6 +215,8 @@ public class CreditCardKernelService extends HostApduService {
         log("received deactivated message with code: " + i);
         if (i == DEACTIVATION_LINK_LOSS) log("deactivated because of DEACTIVATION_LINK_LOSS");
         if (i == DEACTIVATION_DESELECTED) log("deactivated because of DEACTIVATION_DESELECTED");
+        foundAid = -1;
+        cardStatus = Status.NO_SELECT;
     }
 
 
@@ -210,6 +245,11 @@ public class CreditCardKernelService extends HostApduService {
         LAST_ONLINE_ATC_REGISTER_RESPONSE = new byte[NUMBER_OF_AID][];
         LOG_FORMAT_COMMAND = new byte[NUMBER_OF_AID][];
         LOG_FORMAT_RESPONSE = new byte[NUMBER_OF_AID][];
+        INTERNAL_AUTHENTICATION_COMMAND = new byte[NUMBER_OF_AID][];
+        INTERNAL_AUTHENTICATION_RESPONSE = new byte[NUMBER_OF_AID][];
+        APPLICATION_CRYPTOGRAM_COMMAND = new byte[NUMBER_OF_AID][];
+        APPLICATION_CRYPTOGRAM_RESPONSE = new byte[NUMBER_OF_AID][];
+
 
         for (int i = 0; i < NUMBER_OF_AID; i++){
             SELECT_AID_COMMAND[i] = hexToBytes(AID_MODEL[i].getSelectAidCommand());
@@ -219,13 +259,17 @@ public class CreditCardKernelService extends HostApduService {
             // todo this are static/fixed values, need to get values from json
             // todo implement an empty blank hexToBytes
             APPLICATION_TRANSACTION_COUNTER_COMMAND[i] = new byte[]{(byte) 0x80, (byte) 0xCA, (byte) 0x9F, (byte) 0x36, (byte) 0x00};
-            APPLICATION_TRANSACTION_COUNTER_RESPONSE[i] = new byte[]{(byte) 0x12};
+            APPLICATION_TRANSACTION_COUNTER_RESPONSE[i] = hexToBytes("9f36020045");
             LEFT_PIN_TRY_COUNTER_COMMAND[i] = new byte[]{(byte) 0x80, (byte) 0xCA, (byte) 0x9F, (byte) 0x17, (byte) 0x00};
-            LEFT_PIN_TRY_COUNTER_RESPONSE[i] = new byte[]{(byte) 0x3};
+            LEFT_PIN_TRY_COUNTER_RESPONSE[i] = hexToBytes("9f170103");
             LAST_ONLINE_ATC_REGISTER_COMMAND[i] = new byte[]{(byte) 0x80, (byte) 0xCA, (byte) 0x9F, (byte) 0x13, (byte) 0x00};
-            LAST_ONLINE_ATC_REGISTER_RESPONSE[i] = new byte[]{(byte) 0x10};
+            LAST_ONLINE_ATC_REGISTER_RESPONSE[i] = hexToBytes("9f13020044");
             LOG_FORMAT_COMMAND[i] = new byte[]{(byte) 0x80, (byte) 0xCA, (byte) 0x9F, (byte) 0x4F, (byte) 0x00};
-            LOG_FORMAT_RESPONSE[i] = new byte[]{(byte) 0x00};
+            LOG_FORMAT_RESPONSE[i] = hexToBytes("9f4f020000");
+            INTERNAL_AUTHENTICATION_COMMAND[i] = hexToBytes(AID_MODEL[i].getGetInternalAuthenticationCommand());
+            INTERNAL_AUTHENTICATION_RESPONSE[i] = hexToBytes(AID_MODEL[i].getGetInternalAuthenticationResponse());
+            APPLICATION_CRYPTOGRAM_COMMAND[i] = hexToBytes(AID_MODEL[i].getGetApplicationCryptogramCommand());
+            APPLICATION_CRYPTOGRAM_RESPONSE[i] = hexToBytes(AID_MODEL[i].getGetApplicationCryptogramResponse());
 
         }
     }
