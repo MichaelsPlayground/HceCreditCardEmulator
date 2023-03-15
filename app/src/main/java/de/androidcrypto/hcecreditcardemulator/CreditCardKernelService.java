@@ -1,6 +1,7 @@
 package de.androidcrypto.hcecreditcardemulator;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Build;
@@ -16,9 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.IntSummaryStatistics;
 import java.util.List;
-import java.util.stream.IntStream;
 
 import de.androidcrypto.hcecreditcardemulator.common.logger.Log;
 import de.androidcrypto.hcecreditcardemulator.models.Aid;
@@ -44,6 +43,7 @@ public class CreditCardKernelService extends HostApduService {
 
     private static final String TAG = "CCKernel";
     private static final String KERNEL_VERSION = "1.0";
+    public Context context;
 
     private final byte[] SELECT_OK_SW = hexToBytes("9000");
     // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
@@ -92,11 +92,42 @@ public class CreditCardKernelService extends HostApduService {
     private FilesModel[][] FILES;
 
     public CreditCardKernelService() {
+        /*
         // init for the service
         LoadEmulatorData led = new LoadEmulatorData(null);
         aids = led.getAidsFromInternalStorage(FILENAME);
         //aids = getAidsFromInternalStorage(FILENAME);
         initCardData();
+
+         */
+    }
+
+    @Override
+    public void onCreate() {
+
+        log("onCreate CreditCardKernel: " + KERNEL_VERSION);
+        System.out.println("onCreate CreditCardKernel: " + KERNEL_VERSION);
+        //context = getApplication();
+        context = getBaseContext();
+        LoadEmulatorData led = new LoadEmulatorData(context);
+        ArrayList<String> fileList = led.getFileList();
+        log("== fileList in internal storage subfolder cards ==");
+        System.out.println("== fileList in internal storage subfolder cards ==");
+        if (fileList != null) {
+            for (int i = 0; i < fileList.size(); i++) {
+                log("entry " + i + " is " + fileList.get(i));
+                System.out.println("entry " + i + " is " + fileList.get(i));
+            }
+        } else {
+            System.out.println("fileList is NULL");
+        }
+        String fileContent = led.getFileContent("aab mc anon emv.json");
+        System.out.println("content is\n" + fileContent);
+
+        aids = led.getAidsFromInternalStorage(FILENAME);
+        initCardData();
+
+        super.onCreate();
     }
 
     @Override
@@ -106,6 +137,7 @@ public class CreditCardKernelService extends HostApduService {
         return Service.START_STICKY;
     }
 
+    /*
     @Override
     public void onCreate() {
         log("onCreate CreditCardKernel: " + KERNEL_VERSION);
@@ -113,8 +145,27 @@ public class CreditCardKernelService extends HostApduService {
         super.onCreate();
     }
 
+     */
+
     @Override
     public byte[] processCommandApdu(byte[] receivedBytes, Bundle bundle) {
+
+        LoadEmulatorData led = new LoadEmulatorData(context);
+        ArrayList<String> fileList = led.getFileList();
+        log("== fileList in internal storage subfolder cards ==");
+        System.out.println("== fileList in internal storage subfolder cards ==");
+        if (fileList != null) {
+            for (int i = 0; i < fileList.size(); i++) {
+                log("entry " + i + " is " + fileList.get(i));
+                System.out.println("entry " + i + " is " + fileList.get(i));
+            }
+        } else {
+            System.out.println("fileList is NULL");
+        }
+        String fContent = led.getFileContent("aab mc anon emv.json");
+        System.out.println("content is\n" + fContent);
+
+
         // is called when a new commandApdu comes in
         log("card status: " + cardStatus);
         log("command received: " + bytesToHex(receivedBytes));

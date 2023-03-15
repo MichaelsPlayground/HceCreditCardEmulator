@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 import de.androidcrypto.hcecreditcardemulator.models.Aids;
 
@@ -25,10 +26,18 @@ public class LoadEmulatorData {
     private static final String TAG = "LoadEmulatorData";
 
     private final String CARDS_FOLDER = "cards";
-    private Context context;
+    private final Context context;
 
     public LoadEmulatorData(@NonNull Context context) {
         this.context = context;
+    }
+
+    public ArrayList<String> getFileList() {
+        return listFilesInInternalStorage(CARDS_FOLDER);
+    }
+
+    public String getFileContent(@NonNull String fileName) {
+        return readStringFileFromInternalStorage(fileName, CARDS_FOLDER);
     }
 
     public Aids getAidsFromInternalStorage(@NonNull String fileName) {
@@ -118,6 +127,42 @@ public class LoadEmulatorData {
         } else {
             return subfolder + File.separator + filename;
         }
+    }
+
+    /**
+     * list all files in the (sub-) folder of internal storage
+     * @param subfolder
+     * @return ArrayList<String> with filenames
+     */
+    public ArrayList<String> listFilesInInternalStorage(String subfolder) {
+        File file;
+        if (TextUtils.isEmpty(subfolder)) {
+            file = new File(context.getFilesDir(), "");
+        } else {
+            file = new File(context.getFilesDir(), subfolder);
+            /*
+            if (!subfolderFile.exists()) {
+                subfolderFile.mkdirs();
+            }
+
+             */
+
+        }
+        System.out.println("file: " + file.getAbsolutePath());
+        File[] files = file.listFiles();
+        if (files == null) {
+            System.out.println("files is NULL");
+            return null;
+        } else {
+            System.out.println("files is NOT NULL");
+        }
+        ArrayList<String> fileNames = new ArrayList<>();
+        for (File value : files) {
+            if (value.isFile()) {
+                fileNames.add(value.getName());
+            }
+        }
+        return fileNames;
     }
 
 }
