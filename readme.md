@@ -16,14 +16,7 @@ Girocards
 I/System.out: application Id (AID): a00000005945430100
 I/System.out: application Id (AID): a0000003591010028001
 I/System.out: application Id (AID): d27600002547410100
-
-I/System.out: application Id (AID): a00000005945430100
-I/System.out: application Id (AID): a0000003591010028001
-I/System.out: application Id (AID): d27600002547410100
 I/System.out: application Id (AID): a0000000043060
-
-I/System.out: application Id (AID): a00000005945430100
-I/System.out: application Id (AID): a0000003591010028001
 I/System.out: application Id (AID): a0000000032020
 I/System.out: application Id (AID): a0000000032010
 ```
