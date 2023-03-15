@@ -123,6 +123,8 @@ public class CreditCardKernelService extends HostApduService {
             return completeResponse;
         }
 
+        // todo work on this as the MasterCard sample can't get read, Visa is running
+
         // precheck if it is a selectAid command trailer
         if (Arrays.equals(Arrays.copyOfRange(receivedBytes, 0, 4), SELECT_AID_TRAILER)) {
             int foundAidTemp = findDataInDataArray(SELECT_AID_COMMAND, receivedBytes);
