@@ -9,7 +9,7 @@ responds back to the card reader up to a transaction.
 
 You can import your real card data for this purpose to that the app is working as clone of your card.
 
-
+Curated list of AID: https://en.wikipedia.org/wiki/EMV
 
 
 
@@ -108,9 +108,23 @@ limitations under the License.
     -->
 
     <aid-group android:description="@string/card_title" android:category="payment">
-        <aid-filter android:name="F222222222"/>
+        <!-- select PPSE 2PAY.SYS.DDF01 -->        
         <aid-filter android:name="325041592E5359532E4444463031"/>
+        <!-- VisaCard -->
         <aid-filter android:name="A0000000031010"/>
+        <aid-filter android:name="A0000000032010"/>
+        <aid-filter android:name="A0000000032020"/>
+        <aid-filter android:name="A0000000038010"/>
+        <!-- MasterCard -->
+        <aid-filter android:name="A0000000041010"/>
+        <aid-filter android:name="A0000000049999"/>
+        <aid-filter android:name="A0000000043060"/>
+        <aid-filter android:name="A0000000046000"/>
+        <aid-filter android:name="A0000000048002"/>
+        <aid-filter android:name="A0000000050001"/>
+        <!-- American Express -->
+        <aid-filter android:name="A00000002501"/>
+        <aid-filter android:name="A00000079001"/>
     </aid-group>
 <!-- END_INCLUDE(CardEmulationXML) -->
 </host-apdu-service>

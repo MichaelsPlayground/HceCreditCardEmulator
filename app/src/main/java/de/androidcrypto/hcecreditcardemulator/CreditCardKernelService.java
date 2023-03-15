@@ -12,12 +12,18 @@ import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.IntSummaryStatistics;
+import java.util.List;
+import java.util.stream.IntStream;
 
 import de.androidcrypto.hcecreditcardemulator.common.logger.Log;
 import de.androidcrypto.hcecreditcardemulator.models.Aid;
 import de.androidcrypto.hcecreditcardemulator.models.Aids;
+import de.androidcrypto.hcecreditcardemulator.models.FilesModel;
 
 /**
  * This is a system service that acts as an NFC service for Host Card Emulation (HCE)
@@ -44,6 +50,7 @@ public class CreditCardKernelService extends HostApduService {
     private final byte[] UNKNOWN_CMD_SW = hexToBytes("0000");
     private final byte[] NOT_SUPPORTED_CMD_SW = hexToBytes("6a81");
     private final byte[] SELECT_AID_TRAILER = new byte[]{(byte) 0x00, (byte) 0xA4, (byte) 0x04, (byte) 0x00};
+    private final byte[] READ_FILE_TRAILER = new byte[]{(byte) 0x00, (byte) 0xB2};
 
     // this is vor the next step - load an individual file
     private final String CARDS_FOLDER = "cards";
@@ -81,7 +88,8 @@ public class CreditCardKernelService extends HostApduService {
     private byte[][] INTERNAL_AUTHENTICATION_RESPONSE;
     private byte[][] APPLICATION_CRYPTOGRAM_COMMAND;
     private byte[][] APPLICATION_CRYPTOGRAM_RESPONSE;
-
+    private int[] NUMBER_OF_FILES;
+    private FilesModel[][] FILES;
 
     public CreditCardKernelService() {
         // init for the service
@@ -123,7 +131,7 @@ public class CreditCardKernelService extends HostApduService {
             return completeResponse;
         }
 
-        // todo work on this as the MasterCard sample can't get read, Visa is running
+        // todo work on this as the MasterCard sample can't get read, Visa is running for Lloyds (no AFL)
 
         // precheck if it is a selectAid command trailer
         if (Arrays.equals(Arrays.copyOfRange(receivedBytes, 0, 4), SELECT_AID_TRAILER)) {
@@ -152,7 +160,47 @@ public class CreditCardKernelService extends HostApduService {
             }
 
             // next step is to read files if there is an afl in response
-            // todo deny file reading when no files are present
+            // usually a card should not allow to read a file when no AFL is present... but I noticed they allow it anyways
+            int numberOfFilesPresentInAfl = NUMBER_OF_FILES[foundAid];
+            // proceed AFL command checking only if files are present
+            if (numberOfFilesPresentInAfl > 0) {
+                if (Arrays.equals(Arrays.copyOfRange(receivedBytes, 0, 2), READ_FILE_TRAILER)) {
+                    // complete sample read command could look like 00 b2 01 0c 00
+                    // the READ_FILE_TRAILER is                     00 b2
+                    // the sector to read is                              01
+                    // the sfi to read is                                    0c
+                    // the finalization of the command is                       00
+                    // check for correct length of command
+                    if (receivedBytes.length == 5) {
+                        // get the single bytes for rec and sfi
+                        final byte rec = receivedBytes[2];
+                        final byte sfi = receivedBytes[3];
+                        // convert sfi to real sfi number that is shown in the json file
+                        final int sfiSector = sfi >>> 3;
+                        final int record = (int) rec;
+                        // search for sfiSector and record in FILES
+                        byte[] fileContent = searchFileInFiles(sfiSector, record);
+                        if (fileContent == null) {
+                            // means that this file is not available
+                            log("received READ_FILES_COMMAND: " + bytesToHex(receivedBytes));
+                            log("requested file is not present on card");
+                            return NOT_SUPPORTED_CMD_SW;
+                        } else {
+                            log("received READ_FILES_COMMAND: " + bytesToHex(receivedBytes));
+                            completeResponse = ConcatArrays(fileContent, SELECT_OK_SW);
+                            log("send READ_FILES_RESPONSE: " + bytesToHex(completeResponse));
+                        }
+                    } else {
+                        // wrong command
+                        log("the READ_FILES_COMMAND has a wrong data structure");
+                       return UNKNOWN_CMD_SW;
+                    }
+                } // if (Arrays.equals(Arrays.copyOfRange(receivedBytes, 0, 2), READ_FILE_TRAILER)) {
+            } // if (numberOfFilesPresentInAfl > 0) {
+
+
+
+
 
             // some single requests
             if (Arrays.equals(receivedBytes, APPLICATION_TRANSACTION_COUNTER_COMMAND[foundAid])) {
@@ -251,6 +299,7 @@ public class CreditCardKernelService extends HostApduService {
         INTERNAL_AUTHENTICATION_RESPONSE = new byte[NUMBER_OF_AID][];
         APPLICATION_CRYPTOGRAM_COMMAND = new byte[NUMBER_OF_AID][];
         APPLICATION_CRYPTOGRAM_RESPONSE = new byte[NUMBER_OF_AID][];
+        NUMBER_OF_FILES = new int[NUMBER_OF_AID];
 
 
         for (int i = 0; i < NUMBER_OF_AID; i++){
@@ -272,8 +321,38 @@ public class CreditCardKernelService extends HostApduService {
             INTERNAL_AUTHENTICATION_RESPONSE[i] = hexToBytes(AID_MODEL[i].getGetInternalAuthenticationResponse());
             APPLICATION_CRYPTOGRAM_COMMAND[i] = hexToBytes(AID_MODEL[i].getGetApplicationCryptogramCommand());
             APPLICATION_CRYPTOGRAM_RESPONSE[i] = hexToBytes(AID_MODEL[i].getGetApplicationCryptogramResponse());
-
+            NUMBER_OF_FILES[i] = AID_MODEL[i].getNumberOfFiles();
+            // init is below
+            // FILES = new FilesModel[NUMBER_OF_AID][MAX_NUMBER_OF_FILES];
         }
+        // get the maximum of NUMBER_OF_FILES as the FILES array needs to get setup properly
+        // needs min SDK 24
+        /*
+        IntSummaryStatistics stat = Arrays.stream(NUMBER_OF_FILES).summaryStatistics();
+        int MAX_NUMBER_OF_FILES2 = stat.getMax();
+        // needs min SDK 24
+        int i = IntStream.range(0, NUMBER_OF_FILES.length).map(i -> NUMBER_OF_FILES[i]).max().getAsInt();
+        */
+        int MAX_NUMBER_OF_FILES = maxValueOfIntArray(NUMBER_OF_FILES);
+        FILES = new FilesModel[NUMBER_OF_AID][MAX_NUMBER_OF_FILES];
+        // the second run is necessary because we need to init FILES with the correct NUMBER_OF_FILES value that is read out in the loop above
+        for (int i = 0; i < NUMBER_OF_AID; i++) {
+            int NUMBER_OF_FILES_IN_AID = AID_MODEL[i].getNumberOfFiles();
+            for (int j = 0; j < NUMBER_OF_FILES_IN_AID; j++) {
+                FILES[i][j] = AID_MODEL[i].getFiles()[j];
+            }
+        }
+    }
+
+    public int maxValueOfIntArray(int array[]){
+        // https://stackoverflow.com/a/32659836/8166854
+        // not the most efficient way but we are talking about a handful of entries
+        // To get the lowest value, you can use Collections.min(list)
+        List<Integer> list = new ArrayList<Integer>();
+        for (int i = 0; i < array.length; i++) {
+            list.add(array[i]);
+        }
+        return Collections.max(list);
     }
 
     private int findDataInDataArray(@NonNull byte[][] dataArray, @NonNull byte[] data) {
@@ -281,6 +360,17 @@ public class CreditCardKernelService extends HostApduService {
             if (Arrays.equals(data, dataArray[i])) return i;
         }
         return -1;
+    }
+
+    private byte[] searchFileInFiles(int sfi, int record) {
+        for (int i = 0; i < NUMBER_OF_FILES[foundAid]; i++) {
+            final int sfiInFile = FILES[foundAid][i].getSfi();
+            final int recordInFile = FILES[foundAid][i].getRecord();
+            if ((sfi == sfiInFile) && (record == recordInFile)) {
+                return hexToBytes(FILES[foundAid][i].getContent());
+            }
+        }
+        return null;
     }
 
     /**

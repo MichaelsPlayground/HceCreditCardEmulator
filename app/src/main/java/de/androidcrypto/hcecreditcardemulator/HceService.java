@@ -10,6 +10,10 @@ public class HceService extends HostApduService {
     public HceService() {
         // check for a specific file in internal storage
         System.out.println("start HceService");
+        System.out.println("getBaseContext: " + getBaseContext());
+        System.out.println("getApplicationContext: " + getApplicationContext());
+
+
         File file = getFilesDir();
         //File file2 = getExternalFilesDir(null);
         System.out.println("file exists: " + file.exists());
