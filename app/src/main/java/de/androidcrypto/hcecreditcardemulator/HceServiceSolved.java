@@ -1,22 +1,70 @@
 package de.androidcrypto.hcecreditcardemulator;
 
+import android.content.Context;
+import android.content.Intent;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;
 
 import java.io.File;
+import java.security.AccessController;
 
-public class HceService extends HostApduService {
+import de.androidcrypto.hcecreditcardemulator.cardemulation.MainActivity;
 
-    public HceService() {
+public class HceServiceSolved extends HostApduService {
+    // solution: https://stackoverflow.com/a/61272327/8166854
+    public Context context;
+
+    public HceServiceSolved() {
+
+    }
+
+    /*
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId)
+    {
+        System.out.println("onStartCommand");
+        System.out.println("getApplicationContext():" + getApplicationContext());
+        System.out.println("getBaseContext():" + getBaseContext());
+        System.out.println("this:" + this);
+        System.out.println("getApplication():" + getApplication());
+        context= getApplicationContext();
+        //sharedPreferenceManager = new SharedPreferenceManagerToReplace(context);
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+     */
+
+    @Override
+    public void onCreate() {
+    // https://stackoverflow.com/a/7620164/8166854
+    // solution: don't do the work in Constructor but in onCreate() !!!
+/*
+I mean, that for Android system, Activities and Services live not between call of
+constructor and garbage collection, but their live starts from call onCreate() and
+finishes after call onDestroy(). I mean, that you can do any actions/interactions
+with services in the method onCreate() or later, before onDestroy(). Constructor of
+service is called before onCreate(). –
+QuickNick
+ Oct 1, 2011
+ */
+        super.onCreate();
+        //context = getApplicationContext(); // https://stackoverflow.com/a/63101016/8166854
+        //context = getBaseContext();
+        //context = this;
+        context = getApplication();
+
+        //context = HceServiceSolved.this.context;
         // check for a specific file in internal storage
         System.out.println("start HceService");
         System.out.println("getBaseContext: " + getBaseContext());
-        System.out.println("getApplicationContext: " + getApplicationContext());
-
-        File file = getFilesDir();
+        //System.out.println("getApplicationContext: " + getApplicationContext());
+        System.out.println("context: " + context);
+        File file = context.getFilesDir();
         //File file2 = getExternalFilesDir(null);
         System.out.println("file exists: " + file.exists());
     }
+
+
 
     @Override
     public byte[] processCommandApdu(byte[] bytes, Bundle bundle) {
