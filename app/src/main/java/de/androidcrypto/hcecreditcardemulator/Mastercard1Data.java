@@ -52,8 +52,8 @@ public class Mastercard1Data {
             "          \"sfi\": 4\n" +
             "        }\n" +
             "      ],\n" +
-            "      \"getApplicationCryptogramCommand\": \"80ae80000000\",\n" +
-            "      \"getApplicationCryptogramResponse\": \"\",\n" +
+            "      \"getApplicationCryptogramCommand\": \"80ae80004200000000100000000000000009780000000000097823030100383930312200000000000000000000000000111009000000000000000000000000000000000000000000\",\n" +
+            "      \"getApplicationCryptogramResponse\": \"77299f2701809f360205709f2608cc187cf09a1dd07d9f10120110a08003240000000000000000000000ff\",\n" +
             "      \"getInternalAuthenticationCommand\": \"0088000004e153f3e800\",\n" +
             "      \"getInternalAuthenticationResponse\": \"7781849f4b8180b5925f7029ce794393ec440b2768c7d400372f93354c6aabf9faf944c94923ce42be88101201fa51cc5c6d02abcab3ee734c6d68b595c348a7689cbc78a365622fcee845f2f93185ec6967ba9a379d3c0384eb22538ec0d91896bf14d22541aade9e835c92afa245cc6cde111c5fda1c57c062651f30851da0e8bf024b4b6fd0\",\n" +
             "      \"getProcessingOptionsCommand\": \"80a8000002830000\",\n" +

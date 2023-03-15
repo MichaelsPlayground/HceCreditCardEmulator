@@ -139,7 +139,7 @@ public class LogView extends androidx.appcompat.widget.AppCompatTextView impleme
     /** Outputs the string as a new line of log data in the LogView. */
     public void appendToLog(String s) {
         append("\n" + s);
-        System.out.println("*** Log: " + s);
+        //System.out.println("*** Log: " + s);
     }
 
 

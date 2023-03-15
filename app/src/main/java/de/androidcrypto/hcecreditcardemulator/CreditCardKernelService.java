@@ -116,9 +116,8 @@ public class CreditCardKernelService extends HostApduService {
     @Override
     public byte[] processCommandApdu(byte[] receivedBytes, Bundle bundle) {
         // is called when a new commandApdu comes in
-        log("command received: " + bytesToHex(receivedBytes));
-        System.out.println("received: " + bytesToHex(receivedBytes));
         log("card status: " + cardStatus);
+        log("command received: " + bytesToHex(receivedBytes));
 
         byte[] completeResponse;
         // analyze command
@@ -179,6 +178,7 @@ public class CreditCardKernelService extends HostApduService {
                         final int sfiSector = sfi >>> 3;
                         final int record = (int) rec;
                         // search for sfiSector and record in FILES
+                        log("search specific file with sfi: " + sfiSector + " record: " + record);
                         byte[] fileContent = searchFileInFiles(sfiSector, record);
                         if (fileContent == null) {
                             // means that this file is not available
@@ -189,6 +189,7 @@ public class CreditCardKernelService extends HostApduService {
                             log("received READ_FILES_COMMAND: " + bytesToHex(receivedBytes));
                             completeResponse = ConcatArrays(fileContent, SELECT_OK_SW);
                             log("send READ_FILES_RESPONSE: " + bytesToHex(completeResponse));
+                            return completeResponse;
                         }
                     } else {
                         // wrong command
@@ -252,8 +253,7 @@ public class CreditCardKernelService extends HostApduService {
         //cardStatus = Status.NO_SELECT;
         //foundAid = -1; // reset
         log("cardStatus is " + cardStatus);
-        log("return UNKNOWN_CMD_SW");
-        System.out.println("return UNKNOWN_CMD_SW");
+        log("return UNKNOWN_CMD_SW on receivedBytes " + bytesToHex(receivedBytes));
         return UNKNOWN_CMD_SW;
         //return null;
     }
@@ -429,7 +429,7 @@ public class CreditCardKernelService extends HostApduService {
     private void log(String message) {
         String timestampMillis = getTimestampMillis();
         Log.i(TAG, timestampMillis + " " + message);
-        System.out.println(timestampMillis + " " + message);
+        //System.out.println(timestampMillis + " " + message);
     }
 
     private String getTimestampMillis() {
