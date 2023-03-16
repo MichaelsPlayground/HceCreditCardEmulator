@@ -6,9 +6,13 @@ import android.content.Intent;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -104,11 +108,11 @@ public class CreditCardKernelService extends HostApduService {
 
     @Override
     public void onCreate() {
-
+        super.onCreate();
         log("onCreate CreditCardKernel: " + KERNEL_VERSION);
         System.out.println("onCreate CreditCardKernel: " + KERNEL_VERSION);
-        //context = getApplication();
-        context = getBaseContext();
+        context = getApplication();
+        //context = getBaseContext();
         LoadEmulatorData led = new LoadEmulatorData(context);
         ArrayList<String> fileList = led.getFileList();
         log("== fileList in internal storage subfolder cards ==");
@@ -127,7 +131,15 @@ public class CreditCardKernelService extends HostApduService {
         aids = led.getAidsFromInternalStorage(FILENAME);
         initCardData();
 
-        super.onCreate();
+        String fn = "readme.md";
+        File f = new File(getApplication().getFilesDir(), fn);
+        System.out.println("file " + fn + " is existing: " + f.exists());
+        fn = "readme.xd";
+        f = new File(getApplication().getFilesDir(), fn);
+        System.out.println("file " + fn + " is existing: " + f.exists());
+
+        boolean result = writeTextToInternalStorage("test.txt", null, "Hello world");
+        System.out.println("writeResult = " + result);
     }
 
     @Override
@@ -320,7 +332,37 @@ public class CreditCardKernelService extends HostApduService {
         cardStatus = Status.NO_SELECT;
     }
 
-
+    /**
+     * writes a string to the filename in internal storage, If a subfolder is provided the file is created in the subfolder
+     * if the file is existing it will be overwritten
+     * @param filename
+     * @param subfolder
+     * @param data
+     * @return true if writing is successful and false if not
+     */
+    private boolean writeTextToInternalStorage(@NonNull String filename, String subfolder, @NonNull String data){
+        File file;
+        if (TextUtils.isEmpty(subfolder)) {
+            file = new File(getFilesDir(), filename);
+        } else {
+            File subfolderFile = new File(getFilesDir(), subfolder);
+            if (!subfolderFile.exists()) {
+                subfolderFile.mkdirs();
+            }
+            file = new File(subfolderFile, filename);
+        }
+        FileWriter writer = null;
+        try {
+            writer = new FileWriter(file);
+            writer.append(data);
+            writer.flush();
+            writer.close();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
 
     private void initCardData() {

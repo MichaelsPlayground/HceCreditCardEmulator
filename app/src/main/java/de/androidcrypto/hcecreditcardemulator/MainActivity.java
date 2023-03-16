@@ -42,8 +42,18 @@ public class MainActivity extends AppCompatActivity {
 
         initializeLogging();
 
-        Log.e(TAG, getTimestampMillis() + " error");
-        Log.d(TAG, getTimestampMillis() + " no error");
+        // todo workflow
+        // 1 button import emulation data file
+        // -> filePicker to choose file from external dir
+        // -> import the file to internal storage subfolder cards
+        // 2 button list imported cards
+        // -> list all files in the subfolder cards
+        // 3 button choose file from internal storage / subfolder cards as card to load / emulate
+        // -> list files in internal storage subfolder cards with fileChooser
+        // -> copy the file to files root folder
+
+
+        Log.d(TAG, getTimestampMillis() + "System started");
     }
 
     /** Create a chain of targets that will receive log data */
