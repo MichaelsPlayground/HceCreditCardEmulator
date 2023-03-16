@@ -157,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 ArrayList<String> filesInInternalStorage = listFilesInInternalStorage(CARDS_FOLDER);
+                // todo check for NPE if no files are present
                 int nrOfFiles = filesInInternalStorage.size();
                 StringBuilder sb = new StringBuilder();
                 sb.append("found ").append(nrOfFiles).append(" files:");
@@ -172,6 +173,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 information.setText("");
                 ArrayList<String> filesInInternalStorage = listFilesInInternalStorage(CARDS_FOLDER, JSON_FILE_EXTENSION);
+                // todo check for NPE if no files are present
                 int nrOfFiles = filesInInternalStorage.size();
 
                 AlertDialog.Builder builderSingle = new AlertDialog.Builder(MainActivity.this);
