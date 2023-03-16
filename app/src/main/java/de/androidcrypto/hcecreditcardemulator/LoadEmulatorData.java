@@ -52,9 +52,9 @@ public class LoadEmulatorData {
         }
 
          */
-        //String jsonLoaded = VisaCard1Data.visacard1DataJsonString;
+        String jsonLoaded = VisaCard1Data.visacard1DataJsonString;
         //String jsonLoaded = MasterCard1Data.mastercardcard1DataJsonString;
-        String jsonLoaded = GiroCard2Data.girocard2DataJsonString;
+        //String jsonLoaded = GiroCard2Data.girocard2DataJsonString;
         try {
             aids = gson.fromJson(jsonLoaded, Aids.class);
         } catch (IllegalStateException | JsonSyntaxException e) {

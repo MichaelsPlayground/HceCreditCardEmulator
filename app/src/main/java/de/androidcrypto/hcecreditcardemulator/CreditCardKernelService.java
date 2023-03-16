@@ -516,7 +516,7 @@ public class CreditCardKernelService extends HostApduService {
     }
 
     /**
-     * section for loggin
+     * section for logging
      */
 
     private void log(String message) {
