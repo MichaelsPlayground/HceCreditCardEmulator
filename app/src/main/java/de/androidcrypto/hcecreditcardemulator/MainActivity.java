@@ -157,14 +157,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 ArrayList<String> filesInInternalStorage = listFilesInInternalStorage(CARDS_FOLDER);
-                // todo check for NPE if no files are present
-                int nrOfFiles = filesInInternalStorage.size();
-                StringBuilder sb = new StringBuilder();
-                sb.append("found ").append(nrOfFiles).append(" files:");
-                for (int i = 0; i < nrOfFiles; i++) {
-                    sb.append("\n").append(filesInInternalStorage.get(i).replace(JSON_FILE_EXTENSION, ""));
+                if (filesInInternalStorage == null) {
+                    information.setText("found 0 files");
+                } else {
+                    int nrOfFiles = filesInInternalStorage.size();
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("found ").append(nrOfFiles).append(" files:");
+                    for (int i = 0; i < nrOfFiles; i++) {
+                        sb.append("\n").append(filesInInternalStorage.get(i).replace(JSON_FILE_EXTENSION, ""));
+                    }
+                    information.setText(sb.toString());
                 }
-                information.setText(sb.toString());
             }
         });
 
@@ -173,12 +176,13 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 information.setText("");
                 ArrayList<String> filesInInternalStorage = listFilesInInternalStorage(CARDS_FOLDER, JSON_FILE_EXTENSION);
-                // todo check for NPE if no files are present
-                int nrOfFiles = filesInInternalStorage.size();
+                if (filesInInternalStorage == null) {
+                    information.setText("found 0 files");
+                } else {
 
-                AlertDialog.Builder builderSingle = new AlertDialog.Builder(MainActivity.this);
-                //builderSingle.setIcon(R.drawable.hce_96_96);
-                builderSingle.setTitle("Select One Name:-");
+                    AlertDialog.Builder builderSingle = new AlertDialog.Builder(MainActivity.this);
+                    //builderSingle.setIcon(R.drawable.hce_96_96);
+                    builderSingle.setTitle("Select One Name:-");
 
                 /* fixed data
                 final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.select_dialog_singlechoice);
@@ -187,25 +191,21 @@ public class MainActivity extends AppCompatActivity {
                 arrayAdapter.add("Jignesh");
                 arrayAdapter.add("Umang");
                 arrayAdapter.add("Gatti");*/
-                // dynamic data
-                ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.select_dialog_singlechoice, filesInInternalStorage);
+                    // dynamic data
+                    ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.select_dialog_singlechoice, filesInInternalStorage);
+                    builderSingle.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
 
-                builderSingle.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-
-                builderSingle.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        String sourceName = arrayAdapter.getItem(which) + JSON_FILE_EXTENSION;
-                        boolean fileCopySuccess = copyFileInInternalStorage(sourceName, CARDS_FOLDER, CREDIT_CARD_KERNEL_SERVICE_DATA_FILE, DATA_FOLDER);
-                        information.setText("The file copy for " + arrayAdapter.getItem(which) + " was successful: " + fileCopySuccess);
-
-                        // todo use this file and copy it to the main files folder with a fixed name so that the
-                        // todo CreditCardKernelServices can pick it up for general usage
+                    builderSingle.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            String sourceName = arrayAdapter.getItem(which) + JSON_FILE_EXTENSION;
+                            boolean fileCopySuccess = copyFileInInternalStorage(sourceName, CARDS_FOLDER, CREDIT_CARD_KERNEL_SERVICE_DATA_FILE, DATA_FOLDER);
+                            information.setText("The file copy for " + arrayAdapter.getItem(which) + " was successful: " + fileCopySuccess);
                         /*
                         // this is a mini dialog with just an OK button
                         AlertDialog.Builder builderInner = new AlertDialog.Builder(MainActivity.this);
@@ -219,9 +219,10 @@ public class MainActivity extends AppCompatActivity {
                         });
                         builderInner.show();
                         */
-                    }
-                });
-                builderSingle.show();
+                        }
+                    });
+                    builderSingle.show();
+                }
             }
         });
     }
@@ -229,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * checks that the imported file contend is a valid Aids model file
      */
-    private void checkImportedContent(){
+    private void checkImportedContent() {
         Aids aids;
         Gson gson = new Gson();
         // disable next step until a reading is done
@@ -266,16 +267,14 @@ public class MainActivity extends AppCompatActivity {
      */
 
     // This expression allows only characters from a-z, A-Z, numbers from 0-9 and a '_' (underscore) character.
-    public static boolean isValid(String str)
-    {
+    public static boolean isValid(String str) {
         boolean isValid = false;
         //String expression = "^[a-z_A-Z0-9 ]*$"; // This expression allows only characters from a-z, A-Z, numbers from 0-9 and a ‘ ‘(space) or '_' (underscore) character.
         String expression = "^[a-z_A-Z0-9]*$";
         CharSequence inputStr = str;
         Pattern pattern = Pattern.compile(expression);
         Matcher matcher = pattern.matcher(inputStr);
-        if(matcher.matches())
-        {
+        if (matcher.matches()) {
             isValid = true;
         }
         return isValid;
@@ -321,7 +320,6 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 */
-
     private void writeToUiToast(String message) {
         runOnUiThread(() -> {
             Toast.makeText(getApplicationContext(),
@@ -330,7 +328,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    /** Create a chain of targets that will receive log data */
+    /**
+     * Create a chain of targets that will receive log data
+     */
     //@Override
     public void initializeLogging() {
         // Wraps Android's native log framework.
@@ -372,6 +372,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * concatenates the filename with a subfolder
+     *
      * @param filename
      * @param subfolder
      * @return a String subfolder | File.separator | filename
@@ -386,6 +387,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * splits a complete filename in the filename [0] and extension [1]
+     *
      * @param filename with extension
      * @return a String array with filename [0] and extension [1]
      */
@@ -395,20 +397,21 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * counts the number of file extensions (testing on '.' in the filename)
+     *
      * @param filename
      * @return number of extensions
      */
     //public int countChar(String str, char c)
-    private int getNumberOfExtensions(@NonNull String filename)
-    {
+    private int getNumberOfExtensions(@NonNull String filename) {
         char c = '.';
         int count = 0;
-        for(int i=0; i < filename.length(); i++)
-        {    if(filename.charAt(i) == c)
-            count++;
+        for (int i = 0; i < filename.length(); i++) {
+            if (filename.charAt(i) == c)
+                count++;
         }
         return count;
     }
+
     private int getNumberOfExtensionsOld(@NonNull String filename) {
         String[] parts = filename.split(".");
         System.out.println("parts: " + parts.length);
@@ -417,30 +420,33 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * converts a filename to a Android safe filename
+     *
      * @param filename WITHOUT extension
      * @return new filename
      */
     private String getSafeFilename(@NonNull String filename) {
         final int MAX_LENGTH = 127;
         filename = filename.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
-        int end = Math.min(filename.length(),MAX_LENGTH);
-        return filename.substring(0,end);
+        int end = Math.min(filename.length(), MAX_LENGTH);
+        return filename.substring(0, end);
     }
 
     /**
      * converts a filename to an Android safe filename
+     *
      * @param filename WITHOUT extension
      * @return new filename
      */
     private String getSafeFilenameWithoutExtension(@NonNull String filename) {
         final int MAX_LENGTH = 127;
         filename = filename.replaceAll("[^a-zA-Z0-9]", "_");
-        int end = Math.min(filename.length(),MAX_LENGTH);
-        return filename.substring(0,end);
+        int end = Math.min(filename.length(), MAX_LENGTH);
+        return filename.substring(0, end);
     }
 
     /**
      * copies a file in internal storage
+     *
      * @param sourceFilename
      * @param sourceSubfolder
      * @param destFilename
@@ -469,20 +475,20 @@ public class MainActivity extends AppCompatActivity {
         }
         InputStream inStream = null;
         OutputStream outStream = null;
-        try{
+        try {
             inStream = new FileInputStream(sourceFile);
             outStream = new FileOutputStream(destFile);
             byte[] buffer = new byte[1024]; // buffer size
             int length;
             //copy the file content in bytes
-            while ((length = inStream.read(buffer)) > 0){
+            while ((length = inStream.read(buffer)) > 0) {
                 outStream.write(buffer, 0, length);
             }
             inStream.close();
             outStream.close();
             return true;
 
-        } catch(IOException e){
+        } catch (IOException e) {
             //Here you suppose to handle exception to figure out what went wrong
             return false;
         }
@@ -491,6 +497,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * read a file from internal storage and return the content as UTF-8 encoded string
+     *
      * @param filename
      * @param subfolder
      * @return the content as String
@@ -527,12 +534,13 @@ public class MainActivity extends AppCompatActivity {
     /**
      * writes a string to the filename in internal storage, If a subfolder is provided the file is created in the subfolder
      * if the file is existing it will be overwritten
+     *
      * @param filename
      * @param subfolder
      * @param data
      * @return true if writing is successful and false if not
      */
-    private boolean writeTextToInternalStorage(@NonNull String filename, String subfolder, @NonNull String data){
+    private boolean writeTextToInternalStorage(@NonNull String filename, String subfolder, @NonNull String data) {
         File file;
         if (TextUtils.isEmpty(subfolder)) {
             file = new File(getFilesDir(), filename);
@@ -558,6 +566,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * read a file from internal storage and return the content as byte array
+     *
      * @param filename
      * @param subfolder
      * @return the content as String
@@ -594,12 +603,13 @@ public class MainActivity extends AppCompatActivity {
     /**
      * writes a byte array to the filename in internal storage, If a subfolder is provided the file is created in the subfolder
      * if the file is existing it will be overwritten
+     *
      * @param filename
      * @param subfolder
      * @param data
      * @return true if writing is successful and false if not
      */
-    private boolean writeBinaryDataToInternalStorage(@NonNull String filename, String subfolder, @NonNull byte[] data){
+    private boolean writeBinaryDataToInternalStorage(@NonNull String filename, String subfolder, @NonNull byte[] data) {
         final int BUFFER_SIZE = 8096;
         File file;
         if (TextUtils.isEmpty(subfolder)) {
@@ -613,8 +623,7 @@ public class MainActivity extends AppCompatActivity {
         }
         try (
                 ByteArrayInputStream in = new ByteArrayInputStream(data);
-                FileOutputStream out = new FileOutputStream(file))
-        {
+                FileOutputStream out = new FileOutputStream(file)) {
             byte[] buffer = new byte[BUFFER_SIZE];
             int nread;
             while ((nread = in.read(buffer)) > 0) {
@@ -630,6 +639,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * checks if a file in internal storage is existing
+     *
      * @param completeFilename with all subfolders
      * @return true if file exists and false if not
      */
@@ -640,6 +650,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * deletes a file in internal storage
+     *
      * @param completeFilename with all subfolders
      * @return true if deletion was successful
      */
@@ -650,6 +661,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * list all files in the (sub-) folder of internal storage
+     *
      * @param subfolder
      * @return ArrayList<String> with filenames
      */
@@ -680,6 +692,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * list all files in the (sub-) folder of internal storage without the file extension
+     *
      * @param subfolder
      * @param fileExtension
      * @return ArrayList<String> with filenames
@@ -711,6 +724,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * list all folder in the (sub-) folder of internal storage
+     *
      * @param subfolder
      * @return ArrayList<String> with folder names
      */
