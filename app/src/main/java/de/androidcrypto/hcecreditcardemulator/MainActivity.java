@@ -38,6 +38,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
@@ -71,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private String jsonContentLoaded;
     private String importFileName;
     private final String CARDS_FOLDER = "cards"; // the imported files are stored here
+    private final String DATA_FOLDER = "data"; // the files for CreditCardKernelService are stored here
     private final String JSON_FILE_EXTENSION = ".json";
     private final String CREDIT_CARD_KERNEL_SERVICE_DATA_FILE = "card.json";
 
@@ -168,6 +170,7 @@ public class MainActivity extends AppCompatActivity {
         selectImportedFilesInInternalStorage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                information.setText("");
                 ArrayList<String> filesInInternalStorage = listFilesInInternalStorage(CARDS_FOLDER, JSON_FILE_EXTENSION);
                 int nrOfFiles = filesInInternalStorage.size();
 
@@ -195,7 +198,10 @@ public class MainActivity extends AppCompatActivity {
                 builderSingle.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        String strName = arrayAdapter.getItem(which);
+                        String sourceName = arrayAdapter.getItem(which) + JSON_FILE_EXTENSION;
+                        boolean fileCopySuccess = copyFileInInternalStorage(sourceName, CARDS_FOLDER, CREDIT_CARD_KERNEL_SERVICE_DATA_FILE, DATA_FOLDER);
+                        information.setText("The file copy for " + arrayAdapter.getItem(which) + " was successful: " + fileCopySuccess);
+
                         // todo use this file and copy it to the main files folder with a fixed name so that the
                         // todo CreditCardKernelServices can pick it up for general usage
                         /*
@@ -420,7 +426,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * converts a filename to a Android safe filename
+     * converts a filename to an Android safe filename
      * @param filename WITHOUT extension
      * @return new filename
      */
@@ -430,6 +436,56 @@ public class MainActivity extends AppCompatActivity {
         int end = Math.min(filename.length(),MAX_LENGTH);
         return filename.substring(0,end);
     }
+
+    /**
+     * copies a file in internal storage
+     * @param sourceFilename
+     * @param sourceSubfolder
+     * @param destFilename
+     * @param destSubfolder
+     * @return true if copy was successful or false if an error occurs
+     */
+    public boolean copyFileInInternalStorage(@NonNull String sourceFilename, String sourceSubfolder, @NonNull String destFilename, String destSubfolder) {
+        File sourceFile, destFile;
+        if (TextUtils.isEmpty(sourceSubfolder)) {
+            sourceFile = new File(getFilesDir(), sourceFilename);
+        } else {
+            File subfolderFile = new File(getFilesDir(), sourceSubfolder);
+            if (!subfolderFile.exists()) {
+                subfolderFile.mkdirs();
+            }
+            sourceFile = new File(subfolderFile, sourceFilename);
+        }
+        if (TextUtils.isEmpty(destSubfolder)) {
+            destFile = new File(getFilesDir(), destFilename);
+        } else {
+            File subfolderFile = new File(getFilesDir(), destSubfolder);
+            if (!subfolderFile.exists()) {
+                subfolderFile.mkdirs();
+            }
+            destFile = new File(subfolderFile, destFilename);
+        }
+        InputStream inStream = null;
+        OutputStream outStream = null;
+        try{
+            inStream = new FileInputStream(sourceFile);
+            outStream = new FileOutputStream(destFile);
+            byte[] buffer = new byte[1024]; // buffer size
+            int length;
+            //copy the file content in bytes
+            while ((length = inStream.read(buffer)) > 0){
+                outStream.write(buffer, 0, length);
+            }
+            inStream.close();
+            outStream.close();
+            return true;
+
+        } catch(IOException e){
+            //Here you suppose to handle exception to figure out what went wrong
+            return false;
+        }
+    }
+
 
     /**
      * read a file from internal storage and return the content as UTF-8 encoded string

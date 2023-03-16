@@ -57,8 +57,8 @@ public class CreditCardKernelService extends HostApduService {
     private final byte[] READ_FILE_TRAILER = new byte[]{(byte) 0x00, (byte) 0xB2};
 
     // this is vor the next step - load an individual file
-    private final String CARDS_FOLDER = "cards";
-    private final String FILENAME = "lloyds visa.json";
+    //private final String CARDS_FOLDER = "cards";
+    //private final String FILENAME = "lloyds visa.json";
     private Aids aids; // will contain all data from the card
 
     enum Status {
@@ -114,6 +114,9 @@ public class CreditCardKernelService extends HostApduService {
         context = getApplication();
         //context = getBaseContext();
         LoadEmulatorData led = new LoadEmulatorData(context);
+
+
+        /*
         ArrayList<String> fileList = led.getFileList();
         log("== fileList in internal storage subfolder cards ==");
         System.out.println("== fileList in internal storage subfolder cards ==");
@@ -127,10 +130,12 @@ public class CreditCardKernelService extends HostApduService {
         }
         String fileContent = led.getFileContent("aab mc anon emv.json");
         System.out.println("content is\n" + fileContent);
-
         aids = led.getAidsFromInternalStorage(FILENAME);
+*/
+        aids = led.getAidsFromInternalStorage();
         initCardData();
 
+        /*
         String fn = "readme.md";
         File f = new File(getApplication().getFilesDir(), fn);
         System.out.println("file " + fn + " is existing: " + f.exists());
@@ -140,6 +145,7 @@ public class CreditCardKernelService extends HostApduService {
 
         boolean result = writeTextToInternalStorage("test.txt", null, "Hello world");
         System.out.println("writeResult = " + result);
+         */
     }
 
     @Override
@@ -162,8 +168,9 @@ public class CreditCardKernelService extends HostApduService {
     @Override
     public byte[] processCommandApdu(byte[] receivedBytes, Bundle bundle) {
 
-        LoadEmulatorData led = new LoadEmulatorData(context);
-        ArrayList<String> fileList = led.getFileList();
+        //LoadEmulatorData led = new LoadEmulatorData(context);
+        //ArrayList<String> fileList = led.getFileList();
+        /*
         log("== fileList in internal storage subfolder cards ==");
         System.out.println("== fileList in internal storage subfolder cards ==");
         if (fileList != null) {
@@ -176,7 +183,7 @@ public class CreditCardKernelService extends HostApduService {
         }
         String fContent = led.getFileContent("aab mc anon emv.json");
         System.out.println("content is\n" + fContent);
-
+        */
 
         // is called when a new commandApdu comes in
         log("card status: " + cardStatus);
@@ -307,10 +314,6 @@ public class CreditCardKernelService extends HostApduService {
 
 
         }
-
-
-
-
 
         // todo reset cardStatus ?
         //cardStatus = Status.NO_SELECT;

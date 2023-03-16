@@ -25,13 +25,16 @@ import de.androidcrypto.hcecreditcardemulator.models.Aids;
 public class LoadEmulatorData {
     private static final String TAG = "LoadEmulatorData";
 
-    private final String CARDS_FOLDER = "cards";
+    //private final String CARDS_FOLDER = "cards";
+    private final String DATA_FOLDER = "data"; // the files for CreditCardKernelService are stored here
+    private final String CREDIT_CARD_KERNEL_SERVICE_DATA_FILE = "card.json";
     private final Context context;
 
     public LoadEmulatorData(@NonNull Context context) {
         this.context = context;
     }
 
+    /*
     public ArrayList<String> getFileList() {
         return listFilesInInternalStorage(CARDS_FOLDER);
     }
@@ -40,21 +43,34 @@ public class LoadEmulatorData {
         return readStringFileFromInternalStorage(fileName, CARDS_FOLDER);
     }
 
-    public Aids getAidsFromInternalStorage(@NonNull String fileName) {
+     */
+
+    public Aids getAidsFromInternalStorage() {
         Aids aids;
         Gson gson = new Gson();
-
-        /*
-        String jsonLoaded = readStringFileFromInternalStorage(fileName, CARDS_FOLDER);
+        String jsonLoaded = readStringFileFromInternalStorage(CREDIT_CARD_KERNEL_SERVICE_DATA_FILE, DATA_FOLDER);
         if (TextUtils.isEmpty(jsonLoaded)) {
             Log.e(TAG, "Error: File not found");
             return null;
         }
+        try {
+            aids = gson.fromJson(jsonLoaded, Aids.class);
+        } catch (IllegalStateException | JsonSyntaxException e) {
+            Log.e(TAG, "Error: cannot read the file - is it really an Export emulation data file ?");
+            return null;
+        }
+        Log.d(TAG, "Loaded file for emulation: " + CREDIT_CARD_KERNEL_SERVICE_DATA_FILE);
+        return aids;
+    }
 
-         */
-        String jsonLoaded = VisaCard1Data.visacard1DataJsonString;
+    /*
+    public Aids getAidsFromInternalStorage(@NonNull String fileName) {
+        Aids aids;
+        Gson gson = new Gson();
+
+        //String jsonLoaded = VisaCard1Data.visacard1DataJsonString;
         //String jsonLoaded = MasterCard1Data.mastercardcard1DataJsonString;
-        //String jsonLoaded = GiroCard2Data.girocard2DataJsonString;
+        String jsonLoaded = GiroCard2Data.girocard2DataJsonString;
         try {
             aids = gson.fromJson(jsonLoaded, Aids.class);
         } catch (IllegalStateException | JsonSyntaxException e) {
@@ -64,6 +80,7 @@ public class LoadEmulatorData {
         Log.d(TAG, "Loaded file for emulation: " + fileName);
         return aids;
     }
+*/
 
     /**
      * read a file from internal storage and return the content as UTF-8 encoded string
@@ -78,8 +95,6 @@ public class LoadEmulatorData {
             //file = context.getExternalFilesDir(filename);
         } else {
             File subfolderFile = new File(context.getFilesDir(), subfolder);
-            //System.out.println("context: " + context);
-            //System.out.println("subfolder: " + subfolder);
             //File subfolderFile = context.getExternalFilesDir(subfolder);
             if (!subfolderFile.exists()) {
                 subfolderFile.mkdirs();
