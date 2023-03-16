@@ -4,7 +4,7 @@ Actual state: **unfinished project**
 
 This app emulates a Credit Card using  the **Host Card Emulation** technology in Android.
 
-The app will accept **APDU** commands from a contactless cardreader via **NFC** and send 
+The app will accept **APDU** commands from a contactless card-reader via **NFC** and send 
 responds back to the card reader up to a transaction.
 
 You can import your real card data for this purpose to that the app is working as clone of your card.
