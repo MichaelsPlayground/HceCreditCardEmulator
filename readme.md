@@ -130,6 +130,7 @@ limitations under the License.
         <aid-filter android:name="A0000000050001"/>
         <!-- American Express -->
         <aid-filter android:name="A00000002501"/>
+        <aid-filter android:name="A000000025010801"/>
         <aid-filter android:name="A00000079001"/>
     </aid-group>
 <!-- END_INCLUDE(CardEmulationXML) -->
