@@ -11,6 +11,10 @@ You can import your real card data for this purpose to that the app is working a
 
 Curated list of AID: https://en.wikipedia.org/wiki/EMV
 
+Complete list of AIDs: https://www.eftlab.com/knowledge-base/complete-list-of-application-identifiers-aid
+
+PPSE (Paypass Payment System Environment)
+
 ```plaintext
 
 ```
