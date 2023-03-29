@@ -132,6 +132,11 @@ limitations under the License.
         <aid-filter android:name="A00000002501"/>
         <aid-filter android:name="A000000025010801"/>
         <aid-filter android:name="A00000079001"/>
+        <!-- German GiroCard -->
+        <aid-filter android:name="a00000005945430100"/>
+        <aid-filter android:name="a0000003591010028001"/>
+        <aid-filter android:name="d27600002547410100"/>
+        <aid-filter android:name="a0000000043060"/>
     </aid-group>
 <!-- END_INCLUDE(CardEmulationXML) -->
 </host-apdu-service>

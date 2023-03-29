@@ -75,6 +75,7 @@
                 android:layout_marginBottom="4dp"
                 android:hint="information about the file:"
                 android:visibility="visible"
+                android:fontFamily="monospace"
                 app:boxCornerRadiusBottomEnd="5dp"
                 app:boxCornerRadiusBottomStart="5dp"
                 app:boxCornerRadiusTopEnd="5dp"
@@ -126,6 +127,17 @@
                 android:layout_marginBottom="4dp"
                 android:enabled="true"
                 android:text="select an imported file in internal storage" />
+
+            <Button
+                android:id="@+id/btnSelectLogFileInInternalStorage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="4dp"
+                android:enabled="true"
+                android:text="select a log file in internal storage" />
 
             <TextView
                 android:id="@+id/tvLog"

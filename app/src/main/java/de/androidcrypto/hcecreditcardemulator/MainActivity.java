@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MainActivity";
 
     Button selectImportFile, saveImportFileToInternalStorage, listImportedFilesInInternalStorage, selectImportedFilesInInternalStorage;
+    Button selectLogFileInInternalStorage;
     com.google.android.material.textfield.TextInputLayout givenNameLayout;
     com.google.android.material.textfield.TextInputEditText givenName, information;
     TextView tvLog;
@@ -74,6 +75,9 @@ public class MainActivity extends AppCompatActivity {
     private final String CARDS_FOLDER = "cards"; // the imported files are stored here
     private final String DATA_FOLDER = "data"; // the files for CreditCardKernelService are stored here
     private final String JSON_FILE_EXTENSION = ".json";
+    private final String LOG_FOLDER = "log"; // the logged files are stored here
+    private final String LOG_FILE_EXTENSION = ".log";
+
     private final String CREDIT_CARD_KERNEL_SERVICE_DATA_FILE = "card.json";
 
 
@@ -90,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         saveImportFileToInternalStorage = findViewById(R.id.btnSaveImportFileToInternalStorage);
         listImportedFilesInInternalStorage = findViewById(R.id.btnListImportedFilesInInternalStorage);
         selectImportedFilesInInternalStorage = findViewById(R.id.btnSelectImportedFileInInternalStorage);
+        selectLogFileInInternalStorage = findViewById(R.id.btnSelectLogFileInInternalStorage);
         givenNameLayout = findViewById(R.id.etGivenNameLayout);
         givenName = findViewById(R.id.etGivenName);
         information = findViewById(R.id.etInformation);
@@ -206,6 +211,55 @@ public class MainActivity extends AppCompatActivity {
                             String sourceName = arrayAdapter.getItem(which) + JSON_FILE_EXTENSION;
                             boolean fileCopySuccess = copyFileInInternalStorage(sourceName, CARDS_FOLDER, CREDIT_CARD_KERNEL_SERVICE_DATA_FILE, DATA_FOLDER);
                             information.setText("The file copy for " + arrayAdapter.getItem(which) + " was successful: " + fileCopySuccess);
+                        /*
+                        // this is a mini dialog with just an OK button
+                        AlertDialog.Builder builderInner = new AlertDialog.Builder(MainActivity.this);
+                        builderInner.setMessage(strName);
+                        builderInner.setTitle("Your Selected Item is");
+                        builderInner.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog,int which) {
+                                dialog.dismiss();
+                            }
+                        });
+                        builderInner.show();
+                        */
+                        }
+                    });
+                    builderSingle.show();
+                }
+            }
+        });
+
+        selectLogFileInInternalStorage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                information.setText("");
+                ArrayList<String> filesInInternalStorage = listFilesInInternalStorage(LOG_FOLDER, LOG_FILE_EXTENSION);
+                if (filesInInternalStorage == null) {
+                    information.setText("found 0 files");
+                } else {
+
+                    AlertDialog.Builder builderSingle = new AlertDialog.Builder(MainActivity.this);
+                    //builderSingle.setIcon(R.drawable.hce_96_96);
+                    builderSingle.setTitle("Select One File:-");
+
+                    // dynamic data
+                    ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.select_dialog_singlechoice, filesInInternalStorage);
+                    builderSingle.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+
+                    builderSingle.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            String sourceName = arrayAdapter.getItem(which) + LOG_FILE_EXTENSION;
+                            //boolean fileCopySuccess = copyFileInInternalStorage(sourceName, CARDS_FOLDER, CREDIT_CARD_KERNEL_SERVICE_DATA_FILE, DATA_FOLDER);
+                            String fileContent = readStringFileFromInternalStorage(sourceName, LOG_FOLDER);
+                            information.setText(fileContent);
                         /*
                         // this is a mini dialog with just an OK button
                         AlertDialog.Builder builderInner = new AlertDialog.Builder(MainActivity.this);

@@ -43,15 +43,11 @@ import de.androidcrypto.hcecreditcardemulator.models.FilesModel;
 
 
 
-public class CreditCardKernelService extends HostApduService {
+public class CreditCardKernelServiceV1 extends HostApduService {
 
     private static final String TAG = "CCKernel";
     private static final String KERNEL_VERSION = "1.0";
     public Context context;
-
-    private String logOutput; // takes the complete output from first contact until deactivation
-    private String logTimestamp; // timestamp of first contact
-    private boolean newLogin = true; // if true the next command receive will sart a new log, if false just add data to log
 
     private final byte[] SELECT_OK_SW = hexToBytes("9000");
     // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
@@ -99,7 +95,7 @@ public class CreditCardKernelService extends HostApduService {
     private int[] NUMBER_OF_FILES;
     private FilesModel[][] FILES;
 
-    public CreditCardKernelService() {
+    public CreditCardKernelServiceV1() {
         /*
         // init for the service
         LoadEmulatorData led = new LoadEmulatorData(null);
@@ -189,19 +185,9 @@ public class CreditCardKernelService extends HostApduService {
         System.out.println("content is\n" + fContent);
         */
 
-        // check if we are are in a log sequence or a new log session
-        if (newLogin) {
-            // a new log session
-            logOutput = "";
-            logTimestamp = getTimestampMillisFile();
-            newLogin = false;
-        }
-
         // is called when a new commandApdu comes in
         log("card status: " + cardStatus);
         log("command received: " + bytesToHex(receivedBytes));
-
-
 
         byte[] completeResponse;
         // analyze command
@@ -230,16 +216,11 @@ public class CreditCardKernelService extends HostApduService {
             }
         }
 
-        // next commands are allowed only if status is AID_SELECTED or GPO_DONE
+        // next commands are allowed only if status is not AID_SELECTED or GPO_DONE
         if (cardStatus == Status.AID_SELECTED | cardStatus == Status.GPO_DONE) {
             // next step is usually Get Processing Options
             // foundAid should be not -1
-
-            // todo search only on partitial string
-            int partitialStringLength = 6;
-            byte[] partitialGpoCommandReceived = Arrays.copyOf(receivedBytes, partitialStringLength);
-            byte[] partitialGpoCommandStored = Arrays.copyOf(GET_PROCESSING_OPTIONS_COMMAND[foundAid], partitialStringLength);
-            if (Arrays.equals(partitialGpoCommandReceived, partitialGpoCommandStored)) {
+            if (Arrays.equals(receivedBytes, GET_PROCESSING_OPTIONS_COMMAND[foundAid])) {
                 cardStatus = Status.GPO_DONE;
                 log("received GET_PROCESSING_OPTIONS_COMMAND qualifies for cardStatus " + cardStatus);
                 completeResponse = ConcatArrays(GET_PROCESSING_OPTIONS_RESPONSE[foundAid], SELECT_OK_SW);
@@ -352,14 +333,6 @@ public class CreditCardKernelService extends HostApduService {
         if (i == DEACTIVATION_DESELECTED) log("deactivated because of DEACTIVATION_DESELECTED");
         foundAid = -1;
         cardStatus = Status.NO_SELECT;
-
-        // save the complete log to a file in internal storage
-        String completeFilename = logTimestamp + ".log";
-        String sub = "log";
-        writeTextToInternalStorage(completeFilename, sub, logOutput);
-        logOutput = "";
-        logTimestamp = "";
-        newLogin = true;
     }
 
     /**
@@ -552,13 +525,8 @@ public class CreditCardKernelService extends HostApduService {
     private void log(String message) {
         String timestampMillis = getTimestampMillis();
         Log.i(TAG, timestampMillis + " " + message);
-        logOutput += "\n" + timestampMillis + " " + message;
         //System.out.println(timestampMillis + " " + message);
     }
-
-    /**
-     * section for timestamps
-     */
 
     private String getTimestampMillis() {
         // O = SDK 26
@@ -569,11 +537,6 @@ public class CreditCardKernelService extends HostApduService {
         } else {
             return new SimpleDateFormat("yyyy.MM.dd HH:mm:ss:SSS").format(new Date());
         }
-    }
-
-    // returns a String for a filename
-    private String getTimestampMillisFile() {
-        return getTimestampMillis().replaceAll(":", "_").replaceAll(":", "_").replaceAll(" ", "_");
     }
 
 }
